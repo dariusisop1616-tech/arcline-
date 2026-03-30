@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — Arcline{% endblock %}
+{% block body %}
+
+<button class="hamburger" onclick="toggleSidebar()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 14 15 20 7"></polyline>
+        </svg>
+      </div>
+      <span class="logo-text">Arcline</span>
+    </div>
+    <div class="client-badge">
+      <strong>Admin Panel</strong>
+      {{ session['email'] }}
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Admin</div>
+      <a href="/admin" class="nav-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Client Management
+      </a>
+      <a href="/admin/add" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add New Client
+      </a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <strong>{{ session['name'] }}</strong>
+        Administrator
+      </div>
+      <a href="/logout" class="logout-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page-header fade-in">
+      <h1>Admin Panel</h1>
+      <p>Manage clients, billing, and account settings</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- OVERVIEW STATS -->
+    <div class="admin-grid">
+      <div class="glass admin-stat fade-in fade-in-1" style="padding:24px;">
+        <div class="stat-label">Total Clients</div>
+        <div class="stat-value">{{ total_clients }}</div>
+      </div>
+      <div class="glass admin-stat fade-in fade-in-2" style="padding:24px;">
+        <div class="stat-label">Active Clients</div>
+        <div class="stat-value" style="color:var(--green);">{{ active_clients }}</div>
+      </div>
+      <div class="glass admin-stat fade-in fade-in-3" style="padding:24px;">
+        <div class="stat-label">Outstanding Balance</div>
+        <div class="stat-value" style="color:var(--amber);">${{ "%.0f"|format(outstanding) }}</div>
+      </div>
+    </div>
+
+    <!-- CLIENT TABLE -->
+    <div class="glass call-log-card fade-in fade-in-2">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <h3>All Clients</h3>
+        <a href="/admin/add" class="btn btn-primary" style="text-decoration:none;padding:9px 18px;font-size:13px;">+ Add Client</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Business Name</th>
+              <th>Email</th>
+              <th>Subscription</th>
+              <th>Appt Value</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">{{ client['business_name'] or '—' }}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;">{{ client['email'] }}</td>
+              <td>${{ "%.0f"|format(client['subscription_price']) }}/mo</td>
+              <td>${{ "%.0f"|format(client['appointment_value']) }}</td>
+              <td><span class="status-pill pill-{{ client['status'] }}">{{ client['status'].title() }}</span></td>
+              <td>{{ client['created_at'][:10] }}</td>
+              <td>
+                <a href="/admin/client/{{ client['id'] }}" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;text-decoration:none;">Edit</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:32px;">No clients yet. <a href="/admin/add" style="color:var(--indigo2);">Add one →</a></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+</script>
+{% endblock %}

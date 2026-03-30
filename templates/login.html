@@ -1,1 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Login — Arcline{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-glow"></div>
+  <div class="login-card glass fade-in">
+    <div class="login-logo">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 14 15 20 7"></polyline>
+          </svg>
+        </div>
+        <span class="logo-text">Arcline</span>
+      </div>
+      <p>AI Receptionist Platform</p>
+    </div>
 
+    <h2 class="login-title">Welcome back</h2>
+    <p class="login-sub">Sign in to your dashboard</p>
+
+    {% if error %}
+    <div class="login-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>Email address</label>
+        <input type="email" name="email" class="form-control" placeholder="you@clinic.com" required autofocus>
+      </div>
+      <div class="form-group" style="margin-bottom:22px;">
+        <label>Password</label>
+        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;">Sign in →</button>
+    </form>
+
+    <div class="login-hint">
+      <strong style="color:var(--text-primary);display:block;margin-bottom:6px;">Demo credentials</strong>
+      Client: taylor@clinic.com / demo123<br>
+      Admin:  admin@arcline.ai / admin123
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Arcline{% endblock %}
+{% block body %}
+
+<!-- Mobile hamburger -->
+<button class="hamburger" onclick="toggleSidebar()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 14 15 20 7"></polyline>
+        </svg>
+      </div>
+      <span class="logo-text">Arcline</span>
+    </div>
+
+    <div class="client-badge">
+      <strong>{{ user['business_name'] or 'Your Clinic' }}</strong>
+      {{ session['email'] }}
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Navigation</div>
+      <a href="/dashboard" class="nav-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Analytics
+      </a>
+      <a href="/payments" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Payments
+      </a>
+    </div>
+
+    <button class="receptionist-btn" id="recBtn" onclick="openModal()">
+      <div class="rec-dot"></div>
+      <span id="recBtnText">Receptionist Active</span>
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <strong>{{ session['name'] }}</strong>
+        Logged in
+      </div>
+      <a href="/logout" class="logout-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+    <div class="page-header fade-in">
+      <h1>Welcome back, {{ session['name'] }} 👋</h1>
+      <p>Here's your AI receptionist performance overview</p>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar fade-in fade-in-1">
+      <button class="filter-btn" onclick="loadStats('24h',this)">Last 24 Hours</button>
+      <button class="filter-btn active" onclick="loadStats('30d',this)">Last 30 Days</button>
+      <button class="filter-btn" onclick="loadStats('mtd',this)">Month to Date</button>
+      <button class="filter-btn" onclick="loadStats('ytd',this)">Year to Date</button>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid">
+      <div class="glass stat-card fade-in fade-in-1">
+        <div class="stat-label">Total Appointments Booked</div>
+        <div class="stat-value" id="stat-booked">—</div>
+        <div class="stat-delta delta-up" id="stat-booked-delta">+12.5%</div>
+        <div class="stat-sub">vs previous period</div>
+      </div>
+      <div class="glass stat-card fade-in fade-in-2">
+        <div class="stat-label">Extra Revenue Generated</div>
+        <div class="stat-value" id="stat-revenue">—</div>
+        <div class="stat-delta delta-up" id="stat-revenue-delta">+8.2%</div>
+        <div class="stat-sub">at ${{ user['appointment_value']|int }} per appointment</div>
+      </div>
+      <div class="glass stat-card fade-in fade-in-3">
+        <div class="stat-label">Out-of-Hours Calls</div>
+        <div class="stat-value" id="stat-ooh">—</div>
+        <div class="stat-delta delta-down" id="stat-ooh-delta">-2.7%</div>
+        <div class="stat-sub">outside {{ user['hours_open'] }}–{{ user['hours_close'] }}</div>
+      </div>
+      <div class="glass stat-card fade-in fade-in-4">
+        <div class="stat-label">Out-of-Hours Bookings</div>
+        <div class="stat-value" id="stat-ooh-booked">—</div>
+        <div class="stat-delta delta-up" id="stat-ooh-booked-delta">+15.3%</div>
+        <div class="stat-sub">captured after hours</div>
+      </div>
+    </div>
+
+    <!-- CALL MINUTES CHART -->
+    <div class="glass chart-card fade-in fade-in-2">
+      <h3>Call Minutes Overview</h3>
+      <p>Daily call volume — last 30 days</p>
+      <div class="chart-wrap">
+        <canvas id="callChart"></canvas>
+      </div>
+    </div>
+
+    <!-- SYSTEM STATUS -->
+    <div class="glass status-card fade-in fade-in-3">
+      <h3>System Status</h3>
+      <div class="status-diagram" id="statusDiagram">
+        <div class="status-node" id="node-calls">
+          <div class="node-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#6b7df5" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.12 1.18 2 2 0 012.11.0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.43 7.6a16 16 0 006 6l.96-.96a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0120.07 15z"/></svg>
+          </div>
+          <div class="node-name">Incoming Calls</div>
+          <div class="node-status" id="node-calls-status">Live</div>
+        </div>
+
+        <div class="status-line" id="line1">
+          <div class="status-line-inner"></div>
+        </div>
+
+        <div class="status-node" id="node-brain">
+          <div class="node-icon" style="background:rgba(124,92,191,0.25);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#a78bda" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="node-name">Arcline Brain</div>
+          <div class="node-status" id="node-brain-status">Processing</div>
+        </div>
+
+        <div class="status-line" id="line2">
+          <div class="status-line-inner"></div>
+        </div>
+
+        <div class="status-node" id="node-clinic">
+          <div class="node-icon" style="background:rgba(52,211,153,0.15);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="node-name">{{ user['business_name'] or 'Your Clinic' }}</div>
+          <div class="node-status" id="node-clinic-status">Connected</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT CALL LOG -->
+    <div class="glass call-log-card fade-in fade-in-4">
+      <h3>Recent Call Log</h3>
+      <div style="overflow-x:auto;">
+        <table class="call-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Outcome</th>
+              <th>Duration</th>
+              <th>Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for call in calls %}
+            <tr>
+              <td style="color:var(--text-primary);white-space:nowrap;">{{ call['called_at'][:16] }}</td>
+              <td>
+                {% set o = call['outcome'] %}
+                {% if 'Booked' in o %}
+                  <span class="outcome-badge badge-booked">{{ o }}</span>
+                {% elif 'Question' in o %}
+                  <span class="outcome-badge badge-question">{{ o }}</span>
+                {% elif 'Transferred' in o %}
+                  <span class="outcome-badge badge-transferred">{{ o }}</span>
+                {% elif 'Out' in o %}
+                  <span class="outcome-badge badge-ooh">{{ o }}</span>
+                {% else %}
+                  <span class="outcome-badge badge-cancelled">{{ o }}</span>
+                {% endif %}
+              </td>
+              <td>{{ (call['duration'] // 60) }}m {{ (call['duration'] % 60) }}s</td>
+              <td>{{ call['summary'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- CONFIRMATION MODAL -->
+<div class="modal-overlay" id="recModal">
+  <div class="modal">
+    <h3 id="modalTitle">Turn Off Receptionist?</h3>
+    <p id="modalDesc">This will redirect all inbound calls back to your clinic's regular phone line. Your AI receptionist will stop answering calls immediately.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modalConfirm" onclick="confirmToggle()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let receptionistOn = {{ user['receptionist_on'] }};
+let chart = null;
+
+// Init chart
+function initChart(labels, data) {
+  const ctx = document.getElementById('callChart').getContext('2d');
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.map(l => {
+        const d = new Date(l);
+        return d.toLocaleDateString('en-AU', {month:'short',day:'numeric'});
+      }),
+      datasets: [{
+        label: 'Call Minutes',
+        data: data,
+        backgroundColor: 'rgba(79,98,232,0.35)',
+        borderColor: 'rgba(107,125,245,0.8)',
+        borderWidth: 1,
+        borderRadius: 4,
+        hoverBackgroundColor: 'rgba(79,98,232,0.6)',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8892b0', font: {size:10}, maxTicksLimit: 10 } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8892b0', font: {size:10} }, beginAtZero: true }
+      },
+      animation: { duration: 600, easing: 'easeInOutQuart' }
+    }
+  });
+}
+
+function loadStats(period, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  fetch('/api/stats?period=' + period)
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('stat-booked').textContent = d.booked;
+      document.getElementById('stat-revenue').textContent = '$' + d.revenue.toLocaleString('en-AU');
+      document.getElementById('stat-ooh').textContent = d.ooh_calls;
+      document.getElementById('stat-ooh-booked').textContent = d.ooh_booked;
+      initChart(d.chart_labels, d.chart_data);
+      updateStatusDiagram(d.receptionist_on);
+      receptionistOn = d.receptionist_on;
+      updateRecBtn();
+    });
+}
+
+function updateStatusDiagram(on) {
+  const nodes = ['node-calls','node-brain','node-clinic'];
+  const statuses = ['node-calls-status','node-brain-status','node-clinic-status'];
+  const lines = ['line1','line2'];
+  const texts = ['Live','Processing','Connected'];
+  const offTexts = ['Offline','Offline','Disconnected'];
+  nodes.forEach((id,i) => {
+    document.getElementById(id).classList.toggle('offline', !on);
+    document.getElementById(statuses[i]).textContent = on ? texts[i] : offTexts[i];
+    document.getElementById(statuses[i]).classList.toggle('off', !on);
+  });
+  lines.forEach(id => document.getElementById(id).classList.toggle('offline', !on));
+}
+
+function updateRecBtn() {
+  const btn  = document.getElementById('recBtn');
+  const text = document.getElementById('recBtnText');
+  if (receptionistOn) {
+    btn.classList.remove('off');
+    text.textContent = 'Receptionist Active';
+  } else {
+    btn.classList.add('off');
+    text.textContent = 'Receptionist Off — Turn On';
+  }
+}
+
+function openModal() {
+  const modal = document.getElementById('recModal');
+  const title = document.getElementById('modalTitle');
+  const desc  = document.getElementById('modalDesc');
+  const conf  = document.getElementById('modalConfirm');
+  if (receptionistOn) {
+    title.textContent = 'Turn Off Receptionist?';
+    desc.textContent  = 'This will redirect all inbound calls back to your clinic\'s regular phone line immediately.';
+    conf.className    = 'btn btn-danger';
+    conf.textContent  = 'Turn Off';
+  } else {
+    title.textContent = 'Turn On Receptionist?';
+    desc.textContent  = 'Your AI receptionist will resume answering all inbound calls immediately.';
+    conf.className    = 'btn btn-success';
+    conf.textContent  = 'Turn On';
+  }
+  modal.classList.add('open');
+}
+function closeModal() { document.getElementById('recModal').classList.remove('open'); }
+function confirmToggle() {
+  fetch('/api/toggle_receptionist', {method:'POST'})
+    .then(r => r.json())
+    .then(d => {
+      receptionistOn = d.receptionist_on;
+      updateRecBtn();
+      updateStatusDiagram(d.receptionist_on);
+      closeModal();
+    });
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+// Load on page ready
+loadStats('30d', null);
+</script>
+{% endblock %}
