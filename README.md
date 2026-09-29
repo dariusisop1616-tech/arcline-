@@ -1,4 +1,4 @@
-# Arcline Dashboard
+# AutoB antidetect Dashboard
 
 ## Run the app
 

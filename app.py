@@ -72,7 +72,7 @@ def init_db():
 
     if not c.execute("SELECT id FROM users WHERE email='admin@arcline.ai'").fetchone():
         c.execute("INSERT INTO users (name,email,password,role,business_name) VALUES (?,?,?,?,?)",
-                  ('Admin','admin@arcline.ai',hash_pw('admin123'),'admin','Arcline HQ'))
+                  ('Admin','admin@arcline.ai',hash_pw('admin123'),'admin','AutoB antidetect HQ'))
 
     if not c.execute("SELECT id FROM users WHERE email='taylor@clinic.com'").fetchone():
         c.execute("""INSERT INTO users
